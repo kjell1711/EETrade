@@ -475,7 +475,7 @@ function base64UrlEncode(bytes) {
 }
 
 function calcPriceProgress(auction, history) {
-  if (history.length === 0 || auction.startPrice === 0) return "0 %";
+  if (history.length === 0) return "0 %";
   const increase = auction.currentPrice - auction.startPrice;
   const pct = (increase / auction.startPrice) * 100;
   return `${pct.toFixed(2)} %`;
