@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "EETrade Auktionsportal",
+    "defaultLocale": "de-DE",
+    "currency": "EUR"
+  },
+  "theme": {
+    "accentColor": "#ff2d55",
+    "baseMode": "dark",
+    "style": "ios-modern"
+  },
+  "pricing": {
+    "minStartPrice": 1000,
+    "maxStartPrice": 10000000,
+    "defaultBidSteps": [
+      1000,
+      10000,
+      100000
+    ]
+  },
+  "session": {
+    "ttlMinutes": 720
+  },
+  "oauth": {
+    "providerName": "Roblox OAuth",
+    "authorizeUrl": "https://apis.roblox.com/oauth/v1/authorize",
+    "tokenUrl": "https://apis.roblox.com/oauth/v1/token",
+    "userInfoUrl": "https://apis.roblox.com/oauth/v1/userinfo",
+    "tokenExchangeEndpoint": "/api/oauth/exchange",
+    "clientId": "3986826395322745530",
+    "clientSecret": "RBX-sfK98eiucUCMsVSpfWsXEFOO9xYiyPMvsDhFSff-kIKkvm0I0MOWkNVtnpt02kpg",
+    "redirectUri": "http://localhost:8080/",
+    "scope": "openid profile",
+    "responseType": "code",
+    "usePkce": true,
+    "disableOAuthLoginForTesting": false
+  },
+  "admin": {
+    "adminUsernames": [
+      "admin"
+    ],
+    "allowUserBan": true,
+    "allowAuctionDelete": true
+  },
+  "features": {
+    "showPriceStats": true,
+    "allowCustomBidIncrement": true
+  }
+}
