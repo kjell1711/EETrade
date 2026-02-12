@@ -33,7 +33,7 @@
     "scope": "openid profile",
     "responseType": "code",
     "usePkce": true,
-    "disableOAuthLoginForTesting": false
+    "disableOAuthLoginForTesting": true
   },
   "admin": {
     "adminUsernames": [
