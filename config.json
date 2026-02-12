@@ -18,13 +18,15 @@
     "ttlMinutes": 720
   },
   "oauth": {
-    "providerName": "Roklus OAuth",
-    "authorizeUrl": "https://auth.example.com/oauth/authorize",
-    "tokenExchangeEndpoint": "",
-    "clientId": "YOUR_CLIENT_ID",
-    "clientSecret": "YOUR_CLIENT_SECRET",
+    "providerName": "Roblox OAuth",
+    "authorizeUrl": "https://apis.roblox.com/oauth/v1/authorize",
+    "tokenUrl": "https://apis.roblox.com/oauth/v1/token",
+    "userInfoUrl": "https://apis.roblox.com/oauth/v1/userinfo",
+    "tokenExchangeEndpoint": "/api/oauth/exchange",
+    "clientId": "3986826395322745530",
+    "clientSecret": "RBX-sfK98eiucUCMsVSpfWsXEFOO9xYiyPMvsDhFSff-kIKkvm0I0MOWkNVtnpt02kpg",
     "redirectUri": "http://localhost:8080/",
-    "scope": "openid profile email",
+    "scope": "openid profile",
     "responseType": "code",
     "usePkce": true
   },

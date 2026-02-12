@@ -1,5 +1,5 @@
-const STORAGE_KEY = "eetrade-state-v1";
-const SESSION_KEY = "eetrade-session-v1";
+const STORAGE_KEY = "eetrade-state-v2";
+const SESSION_KEY = "eetrade-session-v2";
 const OAUTH_STATE_KEY = "eetrade-oauth-state";
 const OAUTH_PKCE_VERIFIER_KEY = "eetrade-pkce-verifier";
 
@@ -39,7 +39,6 @@ async function bootstrap() {
   el.createAuctionForm.addEventListener("submit", onCreateAuction);
 
   await handleOAuthCallbackIfPresent();
-
   render();
 }
 
@@ -100,11 +99,17 @@ function getCurrentUser() {
 }
 
 function resolveIsAdmin(username) {
-  return state.config.admin.adminUsernames.includes(username);
+  return state.config.admin.adminUsernames.map((entry) => entry.toLowerCase()).includes(username.toLowerCase());
 }
 
 async function startOAuthLogin() {
   const oauth = state.config.oauth;
+
+  if (!oauth.clientId || oauth.clientId === "YOUR_CLIENT_ID") {
+    setHint("Bitte trage zuerst OAuth-Werte in config.json ein (clientId, redirectUri, scope).");
+    return;
+  }
+
   const stateValue = crypto.randomUUID();
   const params = new URLSearchParams({
     response_type: oauth.responseType,
@@ -124,11 +129,6 @@ async function startOAuthLogin() {
     params.set("code_challenge_method", "S256");
   }
 
-  if (!oauth.clientId || oauth.clientId === "YOUR_CLIENT_ID") {
-    el.oauthHint.textContent = "Bitte trage zuerst OAuth-Werte in config.json ein (clientId, redirectUri, scope).";
-    return;
-  }
-
   window.location.href = `${oauth.authorizeUrl}?${params.toString()}`;
 }
 
@@ -136,52 +136,64 @@ async function handleOAuthCallbackIfPresent() {
   const url = new URL(window.location.href);
   const code = url.searchParams.get("code");
   const callbackState = url.searchParams.get("state");
+  const oauthError = url.searchParams.get("error");
+
+  if (oauthError) {
+    setHint(`OAuth-Fehler: ${oauthError}`);
+    return;
+  }
+
   if (!code || !callbackState) return;
 
   const expectedState = localStorage.getItem(OAUTH_STATE_KEY);
   if (!expectedState || expectedState !== callbackState) {
-    el.oauthHint.textContent = "OAuth-Login abgebrochen: ungültiger State.";
+    setHint("OAuth-Login abgebrochen: ungültiger State.");
     return;
   }
 
-  const username = await resolveOAuthIdentity({ code });
-  ensureUser(username);
-  loginAs(username);
+  try {
+    const username = await resolveOAuthIdentity(code);
+    ensureUser(username);
+    loginAs(username);
+    setHint(`Erfolgreich angemeldet als ${username}.`);
+  } catch (error) {
+    setHint(error.message || "OAuth Callback konnte nicht verarbeitet werden.");
+  }
 
+  localStorage.removeItem(OAUTH_STATE_KEY);
+  localStorage.removeItem(OAUTH_PKCE_VERIFIER_KEY);
   url.searchParams.delete("code");
   url.searchParams.delete("state");
+  url.searchParams.delete("error");
   window.history.replaceState({}, "", url.toString());
 }
 
-async function resolveOAuthIdentity({ code }) {
+async function resolveOAuthIdentity(code) {
   const oauth = state.config.oauth;
-  if (oauth.tokenExchangeEndpoint) {
-    try {
-      const payload = {
-        code,
-        clientId: oauth.clientId,
-        clientSecret: oauth.clientSecret,
-        redirectUri: oauth.redirectUri,
-        scope: oauth.scope,
-        codeVerifier: localStorage.getItem(OAUTH_PKCE_VERIFIER_KEY) || ""
-      };
+  const payload = {
+    code,
+    redirectUri: oauth.redirectUri,
+    codeVerifier: localStorage.getItem(OAUTH_PKCE_VERIFIER_KEY) || "",
+    provider: oauth.providerName
+  };
 
-      const response = await fetch(oauth.tokenExchangeEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+  const response = await fetch(oauth.tokenExchangeEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.username) return String(data.username);
-      }
-    } catch {
-      // Fallback below
-    }
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Token-Austausch fehlgeschlagen: ${errorText || response.status}`);
   }
 
-  return `oauth_${code.slice(0, 8)}`;
+  const data = await response.json();
+  if (!data.username) {
+    throw new Error("OAuth-Server lieferte keinen Benutzernamen zurück.");
+  }
+
+  return String(data.username);
 }
 
 function ensureUser(username) {
@@ -201,7 +213,7 @@ function loginAs(username) {
   if (!user) return;
 
   if (user.isBlocked) {
-    el.oauthHint.textContent = "Dieser Account wurde gesperrt.";
+    setHint("Dieser Account wurde gesperrt.");
     return;
   }
 
@@ -227,8 +239,8 @@ function onCreateAuction(event) {
   if (user.isBlocked) return;
 
   const form = new FormData(el.createAuctionForm);
-  const itemName = String(form.get("itemName") || el.createAuctionForm.itemName?.value || "").trim();
-  const startPrice = Number(form.get("startPrice") || el.createAuctionForm.startPrice?.value || 0);
+  const itemName = String(form.get("itemName") || "").trim();
+  const startPrice = Number(form.get("startPrice") || 0);
 
   const { minStartPrice, maxStartPrice } = state.config.pricing;
   if (!itemName || startPrice < minStartPrice || startPrice > maxStartPrice) {
@@ -260,7 +272,7 @@ function placeBid(auctionId, increment) {
   if (!user || user.isBlocked) return;
 
   const auction = state.auctions.find((entry) => entry.id === auctionId && entry.status === "active");
-  if (!auction) return;
+  if (!auction || increment <= 0) return;
 
   const nextAmount = auction.currentPrice + increment;
   const bid = {
@@ -291,6 +303,13 @@ function toggleUserBlock(userId) {
   if (!user || user.username === "admin") return;
   user.isBlocked = !user.isBlocked;
   persistState();
+
+  if (state.session?.userId === user.id && user.isBlocked) {
+    logout();
+    setHint("Dein Account wurde vom Admin gesperrt.");
+    return;
+  }
+
   render();
 }
 
@@ -320,6 +339,11 @@ function renderAuctionList() {
   }
 
   el.auctionList.innerHTML = "";
+  if (sorted.length === 0) {
+    el.auctionList.innerHTML = "<p class='subtitle'>Noch keine Auktionen vorhanden.</p>";
+    return;
+  }
+
   sorted.forEach((auction) => {
     const seller = state.users.find((user) => user.id === auction.sellerId);
     const isActive = auction.id === state.selectedAuctionId;
@@ -428,6 +452,10 @@ function renderAdminPanel() {
   });
 }
 
+function setHint(message) {
+  el.oauthHint.textContent = message;
+}
+
 function createPkceVerifier() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
@@ -458,7 +486,7 @@ function escapeHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 

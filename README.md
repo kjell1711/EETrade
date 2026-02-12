@@ -1,56 +1,64 @@
-# EETrade (MVP)
+# EETrade (Roblox OAuth + Auktionen)
 
-Moderne Auktions-Webseite im iOS-inspirierten Dark-Design mit OAuth-Login, Live-Auktionsfeed und Admin-Panel.
+Moderne Auktions-Webseite im iOS-inspirierten Dark-Design mit Roblox OAuth, Auktionsfeed, Bieten und Admin-Panel.
 
 ## Dateien
 
 - `index.html` – komplette UI (Login, Feed, Erstellen, Detail, Admin)
-- `app.js` – gesamte Frontend-Logik (OAuth, Session, Auktionen, Bieten, Admin)
-- `config.json` – zentrale Konfiguration
+- `app.js` – gesamte Frontend-Logik (OAuth-Flow, Session, Auktionen, Bieten, Admin)
+- `server.js` – lokaler Server + sicherer OAuth Code->Token Austausch
+- `config.json` – zentrale Konfiguration für OAuth, Preise, Session, Admins
 
-## OAuth-Konfiguration
+## Sehr wichtig: Redirect URL wird in Roblox eingetragen (nicht im Script)
 
-Bearbeite in `config.json` den Block `oauth`:
+Du trägst die Redirect URL in **Roblox Creator Dashboard** bei deiner OAuth App ein.
 
-```json
-{
-  "oauth": {
-    "providerName": "Roklus OAuth",
-    "authorizeUrl": "https://auth.example.com/oauth/authorize",
-    "tokenExchangeEndpoint": "",
-    "clientId": "YOUR_CLIENT_ID",
-    "clientSecret": "YOUR_CLIENT_SECRET",
-    "redirectUri": "http://localhost:8080/",
-    "scope": "openid profile email",
-    "responseType": "code",
-    "usePkce": true
-  }
-}
-```
+### Schritt-für-Schritt
 
-### Hinweise
+1. Öffne dein Roblox OAuth Application Dashboard.
+2. Gehe zu den OAuth-Einstellungen deiner App.
+3. Füge unter **Redirect URLs / Callback URLs** genau diese URL hinzu:
+   - `http://localhost:8080/`
+4. Speichern.
+5. Stelle sicher, dass **die gleiche URL** in `config.json` unter `oauth.redirectUri` steht.
 
-- `clientId`, `clientSecret`, `redirectUri`, `scope` zentral nur in **einer** Datei pflegbar.
-- In dieser MVP ist OAuth-End-to-End vorbereitet.
-- Wenn `tokenExchangeEndpoint` gesetzt wird, sendet die App den Callback-Code dorthin und erwartet JSON mit `username`.
-- Ohne Backend-Endpoint nutzt die App einen lokalen Fallback-Login (`oauth_<code>`), damit der Ablauf testbar bleibt.
+Wenn die URL in Roblox und `config.json` nicht exakt gleich ist, schlägt Login fehl.
+
+## OAuth Konfiguration (zentral)
+
+Alle OAuth-Werte sind in `config.json` gesammelt:
+
+- `clientId`
+- `clientSecret`
+- `redirectUri`
+- `scope`
+- `authorizeUrl`
+- `tokenUrl`
+- `userInfoUrl`
+
+Die Website sendet den OAuth-Code an `/api/oauth/exchange`, und **server.js** macht den Token-Tausch sicher auf dem Server.
 
 ## Starten
 
 ```bash
-python3 -m http.server 8080
+node server.js
 ```
 
 Dann öffnen:
 
 - `http://localhost:8080/`
 
-## MVP-Funktionen
+## Was funktioniert jetzt
 
-- OAuth-Login + Session (mit TTL)
-- Auktionen erstellen (Preisgrenzen aus Config)
-- Bieten per Schnellschritten oder freiem Betrag
+- Roblox OAuth Start (Authorization Code + PKCE)
+- Callback-Verarbeitung im Frontend
+- Serverseitiger Token-Austausch (`/api/oauth/exchange`)
+- User-Login Session (TTL in Config)
+- Auktion erstellen mit Preisgrenzen
+- Bieten mit festen Steps + individueller Erhöhung
 - Sortierung nach letzter Aktivität
-- Verlaufsliste pro Auktion
-- Admin-Panel: User sperren/entsperren + Auktion löschen
+- Admin-Panel (User sperren/entsperren, Auktion löschen)
 
+## Hinweis für Produktion
+
+In Produktion sollte `clientSecret` aus einer sicheren Secret-Umgebung kommen (nicht aus einer öffentlichen Datei).
