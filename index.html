@@ -213,6 +213,20 @@
         color: var(--muted);
       }
 
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.68);
+        display: grid;
+        place-items: center;
+        z-index: 50;
+      }
+
+      .modal-card {
+        width: min(420px, calc(100vw - 32px));
+        padding: 22px;
+      }
+
       @media (max-width: 980px) {
         .grid {
           grid-template-columns: 1fr;
@@ -222,6 +236,20 @@
   </head>
   <body>
     <div class="app-shell">
+      <div id="testLoginModal" class="modal-backdrop hidden">
+        <div class="modal-card card">
+          <h3>Test-Login</h3>
+          <p class="subtitle">OAuth ist deaktiviert. Gib einen Benutzernamen zum Testen ein.</p>
+          <form id="testLoginForm">
+            <div class="form-row">
+              <label for="testUsername">Username</label>
+              <input id="testUsername" name="testUsername" required maxlength="32" placeholder="z. B. test_user" />
+            </div>
+            <button type="submit" class="btn btn-primary">Als Test-User starten</button>
+          </form>
+        </div>
+      </div>
+
       <section id="loginScreen" class="login-screen">
         <div class="login-card card">
           <h1>EETrade Auktionsportal</h1>

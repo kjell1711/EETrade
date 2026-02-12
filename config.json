@@ -12,7 +12,11 @@
   "pricing": {
     "minStartPrice": 1000,
     "maxStartPrice": 10000000,
-    "defaultBidSteps": [1000, 10000, 100000]
+    "defaultBidSteps": [
+      1000,
+      10000,
+      100000
+    ]
   },
   "session": {
     "ttlMinutes": 720
@@ -28,10 +32,13 @@
     "redirectUri": "http://localhost:8080/",
     "scope": "openid profile",
     "responseType": "code",
-    "usePkce": true
+    "usePkce": true,
+    "disableOAuthLoginForTesting": false
   },
   "admin": {
-    "adminUsernames": ["admin"],
+    "adminUsernames": [
+      "admin"
+    ],
     "allowUserBan": true,
     "allowAuctionDelete": true
   },

@@ -68,6 +68,17 @@ Im Block `oauth`:
 
 Wenn Dashboard und Config unterschiedlich sind, schlägt OAuth fehl.
 
+
+## Testmodus ohne OAuth (neu)
+
+Wenn du Login kurzfristig ohne Roblox testen willst, setze in `config.json`:
+
+```json
+"disableOAuthLoginForTesting": true
+```
+
+Dann wird OAuth deaktiviert und stattdessen ein kleines Start-Modal angezeigt, in dem du einen Username eingibst.
+
 ## Starten
 
 ```bash

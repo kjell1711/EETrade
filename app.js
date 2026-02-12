@@ -13,6 +13,8 @@ const state = {
 };
 
 const el = {
+  testLoginModal: document.getElementById("testLoginModal"),
+  testLoginForm: document.getElementById("testLoginForm"),
   loginScreen: document.getElementById("loginScreen"),
   appScreen: document.getElementById("appScreen"),
   oauthLoginBtn: document.getElementById("oauthLoginBtn"),
@@ -37,9 +39,14 @@ async function bootstrap() {
   el.oauthLoginBtn.addEventListener("click", startOAuthLogin);
   el.logoutBtn.addEventListener("click", logout);
   el.createAuctionForm.addEventListener("submit", onCreateAuction);
+  el.testLoginForm?.addEventListener("submit", onTestLogin);
 
   await handleOAuthCallbackIfPresent();
   render();
+}
+
+function isTestLoginMode() {
+  return Boolean(state.config.oauth?.disableOAuthLoginForTesting);
 }
 
 async function loadConfig() {
@@ -103,6 +110,11 @@ function resolveIsAdmin(username) {
 }
 
 async function startOAuthLogin() {
+  if (isTestLoginMode()) {
+    setHint("OAuth ist in config.json deaktiviert. Nutze den Test-Login.");
+    return;
+  }
+
   const oauth = state.config.oauth;
 
   if (!oauth.clientId || oauth.clientId === "YOUR_CLIENT_ID") {
@@ -232,6 +244,19 @@ function logout() {
   render();
 }
 
+function onTestLogin(event) {
+  event.preventDefault();
+  if (!isTestLoginMode()) return;
+
+  const form = new FormData(el.testLoginForm);
+  const username = String(form.get("testUsername") || "").trim();
+  if (!username) return;
+
+  ensureUser(username);
+  loginAs(username);
+  render();
+}
+
 function onCreateAuction(event) {
   event.preventDefault();
   const user = getCurrentUser();
@@ -316,8 +341,11 @@ function toggleUserBlock(userId) {
 function render() {
   const user = getCurrentUser();
   const loggedIn = Boolean(user);
+  const testMode = isTestLoginMode();
 
-  el.loginScreen.classList.toggle("hidden", loggedIn);
+  el.testLoginModal?.classList.toggle("hidden", !(testMode && !loggedIn));
+
+  el.loginScreen.classList.toggle("hidden", loggedIn || testMode);
   el.appScreen.classList.toggle("hidden", !loggedIn);
 
   if (!loggedIn) return;
