@@ -9,34 +9,64 @@ Moderne Auktions-Webseite im iOS-inspirierten Dark-Design mit Roblox OAuth, Aukt
 - `server.js` – lokaler Server + sicherer OAuth Code->Token Austausch
 - `config.json` – zentrale Konfiguration für OAuth, Preise, Session, Admins
 
-## Sehr wichtig: Redirect URL wird in Roblox eingetragen (nicht im Script)
+## Roblox Creator Dashboard: Was du genau eintragen musst
 
-Du trägst die Redirect URL in **Roblox Creator Dashboard** bei deiner OAuth App ein.
+Hier ist eine kompakte Checkliste für die OAuth-App in Roblox.
 
-### Schritt-für-Schritt
+### 1) Basisdaten bei „Create App"
 
-1. Öffne dein Roblox OAuth Application Dashboard.
-2. Gehe zu den OAuth-Einstellungen deiner App.
-3. Füge unter **Redirect URLs / Callback URLs** genau diese URL hinzu:
-   - `http://localhost:8080/`
-4. Speichern.
-5. Stelle sicher, dass **die gleiche URL** in `config.json` unter `oauth.redirectUri` steht.
+- **Name**: frei wählbar, z. B. `EETrade Login`
+- **Description**: kurz erklären, z. B. `OAuth login for EETrade auction web app`
+- **Creator/Owner**:
+  - Wenn privat: dein persönlicher Account
+  - Wenn Teamprojekt: die Gruppe, unter der die App laufen soll
 
-Wenn die URL in Roblox und `config.json` nicht exakt gleich ist, schlägt Login fehl.
+> Eine extra "Account-ID" musst du in der Regel **nicht manuell** eintippen. Die ergibt sich aus dem gewählten Owner/Creator.
 
-## OAuth Konfiguration (zentral)
+### 2) App-Icon / Bild
 
-Alle OAuth-Werte sind in `config.json` gesammelt:
+- Lade ein sauberes Quadrat hoch (z. B. 512x512 PNG).
+- Das ist primär für Darstellung/Branding, nicht für OAuth-Funktion.
 
-- `clientId`
-- `clientSecret`
-- `redirectUri`
-- `scope`
-- `authorizeUrl`
-- `tokenUrl`
-- `userInfoUrl`
+### 3) Rechtliche URLs (sehr wichtig)
 
-Die Website sendet den OAuth-Code an `/api/oauth/exchange`, und **server.js** macht den Token-Tausch sicher auf dem Server.
+Du brauchst in der Regel:
+
+- **Privacy Policy URL (Datenschutz)**
+- **Terms of Service URL (Nutzungsbedingungen)**
+
+Wenn du noch keine echte Website hast, nimm für Testzwecke einfache statische Seiten (z. B. Notion/GitHub Pages). Für Produktion sollten es echte, öffentliche Seiten sein.
+
+### 4) Redirect URL / Callback URL (entscheidend)
+
+Für lokalen Test exakt eintragen:
+
+- `http://localhost:8080/`
+
+**Muss 1:1 identisch** sein mit `oauth.redirectUri` in `config.json`.
+
+### 5) Scopes
+
+Für deinen aktuellen Login-Flow reichen minimal:
+
+- `openid`
+- `profile`
+
+(Genau so ist es aktuell in `config.json` hinterlegt.)
+
+---
+
+## Was in `config.json` stehen muss (1:1 mit Roblox App abgleichen)
+
+Im Block `oauth`:
+
+- `clientId` → aus Roblox OAuth App
+- `clientSecret` → aus Roblox OAuth App
+- `redirectUri` → exakt wie im Dashboard (`http://localhost:8080/`)
+- `scope` → z. B. `openid profile`
+- `authorizeUrl`, `tokenUrl`, `userInfoUrl` → Roblox Endpoints
+
+Wenn Dashboard und Config unterschiedlich sind, schlägt OAuth fehl.
 
 ## Starten
 
@@ -59,6 +89,13 @@ Dann öffnen:
 - Sortierung nach letzter Aktivität
 - Admin-Panel (User sperren/entsperren, Auktion löschen)
 
+## Fehlercheck (wenn Login nicht geht)
+
+1. Redirect URL stimmt nicht exakt überein.
+2. Falsche `clientId` oder `clientSecret`.
+3. Scope in Dashboard passt nicht zu Scope in Config.
+4. App ist im Dashboard noch nicht korrekt veröffentlicht/freigeschaltet.
+
 ## Hinweis für Produktion
 
-In Produktion sollte `clientSecret` aus einer sicheren Secret-Umgebung kommen (nicht aus einer öffentlichen Datei).
+`clientSecret` sollte nicht in einer öffentlich verteilten `config.json` liegen. In Produktion Secrets immer per Server-Umgebungsvariablen laden.
